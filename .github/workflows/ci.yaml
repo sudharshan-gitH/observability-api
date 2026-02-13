@@ -11,7 +11,7 @@ jobs:
       aws-region: us-east-1
       ecr-repo: demo-observability-api
       helm-repo: demo-observability-helm
-      eks-cluster: demo-cluster
+      eks-cluster: demo-cluster 
     secrets:
        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
        AWS_EKS_SECRET: ${{ secrets.AWS_EKS_SECRET }}
