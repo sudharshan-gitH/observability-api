@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy:
-    uses: platform/central-pipeline/.github/workflows/helm-deploy.yml@main
+    uses: sudharshan-gitH/devops-central-pipeline/.github/workflows/deploy.yaml@main
     with:
       aws-region: us-east-1
       ecr-repo: demo-observability-api
