@@ -1,82 +1,19 @@
-name: Central Helm Deploy
+name: Deploy API
 
 on:
-  workflow_call:
-    inputs:
-      aws-region:
-        required: true
-        type: string
-      ecr-repo:
-        required: true
-        type: string
-      helm-repo:
-        required: true
-        type: string
-      eks-cluster:
-        required: true
-        type: string
-    secrets:
-      AWS_ACCESS_KEY_ID:
-        required: true
-      AWS_SECRET_ACCESS_KEY:
-        required: true
-      AWS_ACCOUNT_ID:
-        required: true
+  push:
+    branches: [ main ]
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    uses: platform/central-pipeline/.github/workflows/helm-deploy.yml@main
+    with:
+      aws-region: us-east-1
+      ecr-repo: demo-observability-api
+      helm-repo: demo-observability-helm
+      eks-cluster: demo-cluster
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_EKS_SECRET }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ inputs.aws-region }}
-
-      - name: Login to ECR
-        run: |
-          aws ecr get-login-password --region ${{ inputs.aws-region }} | \
-          docker login --username AWS --password-stdin \
-          ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.aws-region }}.amazonaws.com
-
-      - name: Build and Push Docker Image
-        run: |
-          IMAGE_TAG=${{ github.sha }}
-          docker build -t ${{ inputs.ecr-repo }}:$IMAGE_TAG .
-          docker tag ${{ inputs.ecr-repo }}:$IMAGE_TAG \
-          ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.aws-region }}.amazonaws.com/${{ inputs.ecr-repo }}:$IMAGE_TAG
-          docker push \
-          ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.aws-region }}.amazonaws.com/${{ inputs.ecr-repo }}:$IMAGE_TAG
-
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-
-      - name: Package Helm Chart
-        run: helm package helm/demo-api
-
-      - name: Push Helm Chart to ECR
-        run: |
-          aws ecr get-login-password --region ${{ inputs.aws-region }} | \
-          helm registry login --username AWS --password-stdin \
-          ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.aws-region }}.amazonaws.com
-
-          helm push demo-api-0.1.0.tgz \
-          oci://${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.aws-region }}.amazonaws.com/${{ inputs.helm-repo }}
-
-      - name: Update kubeconfig
-        run: |
-          aws eks update-kubeconfig \
-          --region ${{ inputs.aws-region }} \
-          --name ${{ inputs.eks-cluster }}
-
-      - name: Deploy to EKS
-        run: |
-          helm upgrade --install demo-api \
-          oci://${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.aws-region }}.amazonaws.com/${{ inputs.helm-repo }}/demo-api \
-          --version 0.1.0 \
-          --set image.repository=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.aws-region }}.amazonaws.com/${{ inputs.ecr-repo }} \
-          --set image.tag=${{ github.sha }}
