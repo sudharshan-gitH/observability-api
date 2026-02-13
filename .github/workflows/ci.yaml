@@ -13,7 +13,8 @@ jobs:
       helm-repo: demo-observability-helm
       eks-cluster: demo-cluster
     secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_EKS_SECRET }}
-      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+       AWS_EKS_SECRET: ${{ secrets.AWS_EKS_SECRET }}
+       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+
 
